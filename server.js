@@ -10,6 +10,7 @@ app.use(bodyParser.json());
 
 // API Route for Registration
 app.post('/api/register', async (req, res) => {
+    console.log('--- RECEIVED /api/register REQUEST ---');
     const data = req.body;
 
     // 1. Server-Side Validation (Minimal Example)
