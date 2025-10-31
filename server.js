@@ -12,7 +12,7 @@ app.use(bodyParser.json());
 
 // ✅ Enable CORS for frontend (both local + Render)
 app.use(cors({
-    origin: ['http://localhost:5173', 'https://matrixwebservice.onrender.com', '*'], // Replace 'matrixweb.onrender.com' with your actual frontend Render URL
+    origin: ['http://localhost:5173', 'https://matrixwebapp.onrender.com', '*'], // Replace 'matrixweb.onrender.com' with your actual frontend Render URL
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
