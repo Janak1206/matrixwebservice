@@ -8,19 +8,20 @@ const PORT = process.env.PORT || 5000;
 
 app.use(bodyParser.json());
 
+// Helper function to convert empty strings to null
+const cleanInput = (value) => (value === '' ? null : value);
+
 // API Route for Registration
 app.post('/api/register', async (req, res) => {
     console.log('--- RECEIVED /api/register REQUEST ---');
     const data = req.body;
 
-    // 1. Server-Side Validation (Minimal Example)
+    // 1. Server-Side Validation
     if (!data.studentName || !data.email || !data.mobile) {
         return res.status(400).json({ message: 'Missing required fields.' });
     }
-
-    // Check conditional fields
-    if (data.standard === 'Other' && !data.standardOtherDetails) {
-        return res.status(400).json({ message: 'Standard details are required when selecting "Other".' });
+    if (!data.dob) {
+        return res.status(400).json({ message: 'Date of Birth is required.' });
     }
 
     // 2. SQL Query and Parameters
@@ -35,23 +36,24 @@ app.post('/api/register', async (req, res) => {
 
     const values = [
         data.studentName,
-        data.address,
+        cleanInput(data.address),
         data.email,
         data.mobile,
-        data.dob,
-        data.school,
+        // 💡 FIX 1: Ensure DOB is passed as a DATE (or string convertible to DATE)
+        cleanInput(data.dob),
+        cleanInput(data.school),
         data.standard,
-        // Conditional fields are safely passed as their current value (null/string)
-        data.standard === 'Other' ? data.standardOtherDetails : null,
+        // 💡 FIX 2: Use cleanInput for optional details
+        data.standard === 'Other' ? cleanInput(data.standardOtherDetails) : null,
         data.board,
-        data.board === 'Other' ? data.boardOtherDetails : null,
-        // JSON.stringify() is necessary to convert the JS array/object to a valid JSON string for PostgreSQL
+        data.board === 'Other' ? cleanInput(data.boardOtherDetails) : null,
+        // JSON.stringify() is necessary for JSONB/JSON column type
         JSON.stringify(data.programDetails || []),
     ];
 
     try {
-        console.log("values::", values)
-        console.log("insertQuery::", insertQuery)
+        // console.log("values::", values) // Remove in production code
+        // console.log("insertQuery::", insertQuery) // Remove in production code
 
         const result = await db.query(insertQuery, values);
 
@@ -62,16 +64,22 @@ app.post('/api/register', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('PostgreSQL Registration error:', error.message);
+        // Log the full error to the Render logs
+        console.error('PostgreSQL Registration error:', error.message, error.stack);
 
         // Handle specific errors like duplicate email
         if (error.code === '23505') { // PostgreSQL unique violation error code
             return res.status(409).json({ message: 'Error: Email address already registered.' });
         }
+        if (error.code === '23502') { // PostgreSQL NOT NULL violation
+            return res.status(400).json({ message: `Missing data for a required database field (NOT NULL violation: ${error.message}).` });
+        }
 
-        res.status(500).json({ message: 'Server error during registration.' });
+        res.status(500).json({ message: 'Server error during registration. Check Render logs for details.' });
     }
 });
+
+// app.get('/api/students', ...) remains unchanged as it works
 
 app.get('/api/students', async (req, res) => {
     // Select all columns from the students table
@@ -84,7 +92,7 @@ app.get('/api/students', async (req, res) => {
         res.status(200).json(result.rows);
 
     } catch (error) {
-        console.error('PostgreSQL Fetch Error:', error.message);
+        console.error('PostgreSQL Fetch Error:', error.message, error.stack);
         res.status(500).json({ message: 'Internal server error while fetching student data.' });
     }
 });
