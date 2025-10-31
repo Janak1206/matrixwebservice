@@ -8,6 +8,9 @@ const pool = new Pool({
     database: process.env.PGDATABASE || 'studentRegistrationDB', // Change this
     password: process.env.PGPASSWORD || 'your_pg_password', // Change this
     port: process.env.PGPORT || 5432,
+    ssl: {
+        rejectUnauthorized: false, // ✅ Important for Neon / Render / SSL connections
+    },
 });
 
 // Test the connection when the server starts
