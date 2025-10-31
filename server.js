@@ -10,13 +10,24 @@ const PORT = process.env.PORT || 5000;
 // ✅ Enable JSON parsing
 app.use(bodyParser.json());
 
-// ✅ Enable CORS for frontend (both local + Render)
-app.use(cors({
-    origin: ['http://localhost:5173', 'https://matrixwebapp.onrender.com', '*'], // Replace 'matrixweb.onrender.com' with your actual frontend Render URL
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true,
-}));
+// ✅ Custom CORS middleware
+const allowedOrigins = [
+    'http://localhost:5173',
+    'https://matrixwebapp.onrender.com'
+];
+
+app.use((req, res, next) => {
+    const origin = req.headers.origin;
+    if (allowedOrigins.includes(origin)) {
+        res.header('Access-Control-Allow-Origin', origin);
+    }
+    res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type,Authorization');
+    if (req.method === 'OPTIONS') {
+        return res.sendStatus(200);
+    }
+    next();
+});
 
 // ✅ Helper: Convert empty strings to null
 const cleanInput = (value) => (value === '' ? null : value);
@@ -24,6 +35,10 @@ const cleanInput = (value) => (value === '' ? null : value);
 // ✅ Root route (for Render health checks)
 app.get('/', (req, res) => {
     res.json({ message: '✅ Matrix Web Service API running successfully!' });
+});
+
+app.get('/api/test-cors', (req, res) => {
+    res.json({ message: 'CORS is working!' });
 });
 
 // ✅ Registration API
@@ -107,9 +122,6 @@ app.use((err, req, res, next) => {
     res.status(500).json({ message: 'Internal Server Error', error: err.message });
 });
 
-app.get('/api/test-cors', (req, res) => {
-    res.json({ message: 'CORS is working!' });
-});
 
 // ✅ Start server
 app.listen(PORT, () => {
