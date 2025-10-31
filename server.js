@@ -49,6 +49,9 @@ app.post('/api/register', async (req, res) => {
     ];
 
     try {
+        console.log("values::", values)
+        console.log("insertQuery::", insertQuery)
+
         const result = await db.query(insertQuery, values);
 
         // Respond with the ID of the newly inserted student
